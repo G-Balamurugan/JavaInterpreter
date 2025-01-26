@@ -1,8 +1,10 @@
 package com.craftinginterpreters.lox;
 
 import com.craftinginterpreters.lox.model.Expr;
+import com.craftinginterpreters.lox.model.Token;
+import com.craftinginterpreters.lox.model.TokenType;
 
-public class AstPrinter implements Expr.Visitor<String>{
+public class AstPrinter implements Expr.Visitor<String> {
     String print(Expr expr) {
         return expr.accept(this);
     }
@@ -34,12 +36,26 @@ public class AstPrinter implements Expr.Visitor<String>{
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append("(").append(name);
-        for(Expr expr : exprs) {
+        for (Expr expr : exprs) {
             stringBuilder.append(" ");
             stringBuilder.append(expr.accept(this));
         }
         stringBuilder.append(")");
 
         return stringBuilder.toString();
+    }
+
+    public static void main(String[] args) {
+        Expr expr = new Expr.Binary(
+                new Expr.Unary(
+                        new Token(TokenType.MINUS, "-", null, 1),
+                        new Expr.Literal(123)
+                ),
+                new Token(TokenType.STAR, "*", null, 1),
+                new Expr.Grouping(
+                        new Expr.Literal(45.67)
+                )
+        );
+        System.out.println(new AstPrinter().print(expr));
     }
 }

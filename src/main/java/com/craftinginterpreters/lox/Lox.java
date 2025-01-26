@@ -1,7 +1,9 @@
 package com.craftinginterpreters.lox;
 
+import com.craftinginterpreters.lox.model.Expr;
 import com.craftinginterpreters.lox.model.Scanner;
 import com.craftinginterpreters.lox.model.Token;
+import com.craftinginterpreters.lox.model.TokenType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.io.BufferedReader;
@@ -14,7 +16,9 @@ import java.util.List;
 
 @SpringBootApplication
 public class Lox {
+	private static final Interpreter interpreter = new Interpreter();
 	static boolean hadError = false;
+	static boolean hadRuntimeError = false;
 
 	public static void main(String[] args) throws IOException {
 		if (args.length > 1) {
@@ -33,6 +37,9 @@ public class Lox {
 
 		if (hadError) {
 			System.exit(65);
+		}
+		if (hadRuntimeError) {
+			System.exit(70);
 		}
 	}
 
@@ -59,6 +66,16 @@ public class Lox {
 		for (Token token : tokenList) {
 			System.out.println(token);
 		}
+
+		List<Token> tokens = scanner.scanTokens();
+		Parser parser = new Parser(tokens);
+		Expr expression = parser.parse();
+
+		// Stop if there was a syntax error.
+		if (hadError) return;
+		System.out.println(new AstPrinter().print(expression));
+
+		interpreter.interpret(expression);
 	}
 
 	public static void error(int lineNumber, String errorMessage) {
@@ -70,5 +87,20 @@ public class Lox {
 				"[line " + lineNumber + "] Error" + where + ": " + message
 		);
 		hadError = true;
+	}
+
+	static Throwable error(Token token, String message) {
+		if (token.tokenType == TokenType.EOF) {
+			report(token.lineNumber, " at end", message);
+		} else {
+			report(token.lineNumber, " at '" + token.lexeme + "'", message);
+		}
+		return null;
+	}
+
+	static void runtimeError(RuntimeError error) {
+		System.err.println(error.getMessage() +
+				"\n[line " + error.token.lineNumber + "]");
+		hadRuntimeError = true;
 	}
 }
